@@ -105,8 +105,11 @@ in
       user = "greeter";
     };
   };
+  # O módulo services.greetd do nixpkgs já declara o usuário `greeter`
+  # como isSystemUser (grupo "greeter"). Aqui só completamos o que o
+  # ReGreet precisa — NÃO declarar isNormalUser junto com o greetd:
+  # os dois marcados violam a asserção "Exactly one of ..." do módulo users.
   users.users.greeter = {
-    isNormalUser = true;
     home = "/var/lib/greeter";
     createHome = true;
     extraGroups = [ "video" "input" ];
