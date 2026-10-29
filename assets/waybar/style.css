@@ -1,0 +1,60 @@
+/* Barra de menu AquaOS — translúcida como a do macOS. */
+* {
+    font-family: "Inter", "JetBrainsMono Nerd Font", sans-serif;
+    font-size: 12px;
+    min-height: 0;
+}
+
+window#waybar {
+    background: rgba(18, 18, 22, 0.42);
+    color: rgba(255, 255, 255, 0.92);
+    border: none;
+}
+
+#workspaces button {
+    padding: 2px 8px;
+    margin: 3px 2px;
+    color: rgba(255, 255, 255, 0.55);
+    border-radius: 8px;
+}
+#workspaces button.active {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+#workspaces button.urgent {
+    background: rgba(255, 95, 87, 0.5);
+    color: #ffffff;
+}
+
+#window {
+    margin: 0 10px;
+    font-weight: 600;
+}
+
+#tray,
+#pulseaudio,
+#network,
+#battery,
+#clock {
+    padding: 0 9px;
+}
+
+#clock {
+    font-weight: 500;
+}
+
+#pulseaudio.muted {
+    color: #ff8a80;
+}
+#battery.warning:not(.charging) {
+    color: #ffd166;
+}
+#battery.critical:not(.charging) {
+    color: #ff5f57;
+    animation: blink 0.8s steps(2) infinite;
+}
+@keyframes blink {
+    50% {
+        opacity: 0.6;
+    }
+}

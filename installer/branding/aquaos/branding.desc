@@ -1,0 +1,47 @@
+# Branding do instalador AquaOS (Calamares).
+# Formato idêntico ao do upstream (calamares-nixos-extensions).
+---
+componentName: aquaos
+
+welcomeStyleCalamares: false
+welcomeExpandingLogo: true
+
+windowExpanding:    normal
+windowSize:         900px,600px
+windowPlacement:    center
+
+sidebar:    widget
+navigation: widget
+
+strings:
+    productName:         AquaOS
+    shortProductName:    AquaOS
+    version:             1.0
+    shortVersion:        1.0
+    versionedName:       AquaOS 1.0 "Aurora"
+    shortVersionedName:  AquaOS 1.0
+    bootloaderEntryName: AquaOS
+    productUrl:          ""
+    supportUrl:          ""
+    knownIssuesUrl:      ""
+    releaseNotesUrl:     ""
+    donateUrl:           ""
+
+images:
+    productLogo:         "logo.svg"
+    productIcon:         "logo.svg"
+    productWelcome:      "logo.svg"
+
+style:
+    SidebarBackground:        "#2c2c2e"
+    SidebarText:              "#FFFFFF"
+    SidebarTextCurrent:       "#FFFFFF"
+    SidebarBackgroundCurrent: "#0a84ff"
+
+slideshow: "show.qml"
+slideshowAPI: 2
+
+uploadServer:
+    type: "none"
+    url: "none"
+    sizeLimit: -1

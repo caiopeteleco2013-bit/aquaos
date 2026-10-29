@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Marca do AquaOS (silhueta de maçã genérica, estilo macOS). -->
+  <defs>
+    <linearGradient id="aquaos-g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#d4d4dc"/>
+    </linearGradient>
+  </defs>
+  <!-- corpo -->
+  <path fill="url(#aquaos-g)" d="
+    M 256 168
+    C 220 122 150 118 118 160
+    C 84 204 96 300 150 352
+    C 176 377 208 372 228 360
+    C 240 353 272 353 284 360
+    C 304 372 336 377 362 352
+    C 416 300 428 204 394 160
+    C 362 118 292 122 256 168
+    Z"/>
+  <!-- folha -->
+  <path fill="url(#aquaos-g)" d="
+    M 262 148
+    C 257 116 284 92 314 90
+    C 318 122 291 146 262 148
+    Z"/>
+</svg>

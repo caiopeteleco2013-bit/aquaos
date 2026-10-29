@@ -1,0 +1,62 @@
+# Builda a ISO do AquaOS num runner Linux do GitHub Actions.
+#
+# Como o flake está fixado num commit de canal (release) da nixos-26.05,
+# praticamente tudo vem pronto do cache binário da Hydra — a build da ISO
+# leva ~15–30 min num runner padrão gratuito (2 núcleos), sem compilar o
+# kernel Linux. Repositório público = minutos ilimitados; privado =
+# 2.000 min/mês (algumas dezenas de builds).
+name: build-iso
+
+on:
+  # Botão manual: Actions → build-iso → Run workflow
+  workflow_dispatch:
+  # Também builda a cada push na main que não seja só texto/README
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
+
+# Não desperdiça minutos: cancela a rodada anterior da mesma branch
+concurrency:
+  group: build-iso-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    # Teto de segurança abaixo do limite de 6 h por job
+    timeout-minutes: 355
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Liberar espaço em disco (SDKs e imagens de container pré-instalados)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                      /opt/hostedtoolcache/CodeQL /usr/local/.ghcup /usr/share/swift
+          sudo docker image prune -af 2>/dev/null || true
+          sudo apt-get clean
+          df -h /
+
+      - name: Instalar o Nix
+        uses: cachix/install-nix-action@v31.11.3
+        with:
+          # Token do próprio runner: evita rate-limit da API do GitHub
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Buildar a ISO do AquaOS
+        # -L: logs completos por derivação (facilita depurar falhas)
+        run: nix build -L .#aquaos-iso
+
+      - name: Subir a ISO como artefato
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: aquaos-iso
+          path: result/iso/*.iso
+          if-no-files-found: error
+          compression-level: 0   # a ISO já é comprimida (squashfs); não re-zipar
+          retention-days: 14

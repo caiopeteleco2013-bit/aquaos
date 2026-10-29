@@ -1,0 +1,48 @@
+// Barra de menu estilo macOS (menu bar): workspaces à esquerda,
+// nome do app em foco ao lado, e tray/volume/rede/bateria/hora à direita.
+{
+    "layer": "top",
+    "position": "top",
+    "height": 28,
+
+    "modules-left": ["hyprland/workspaces", "hyprland/window"],
+    "modules-right": ["tray", "pulseaudio", "network", "battery", "clock"],
+
+    "hyprland/workspaces": {
+        "format": "{index}",
+        "tooltip": false
+    },
+    "hyprland/window": {
+        "format": "{}",
+        "tooltip": false
+    },
+
+    "tray": {
+        "icon-size": 16,
+        "spacing": 10
+    },
+    "pulseaudio": {
+        "format": "{volume}%",
+        "format-muted": "mudo",
+        "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "tooltip": false
+    },
+    "network": {
+        "format-wifi": "{essid}",
+        "format-ethernet": "cabo",
+        "format-disconnected": "off",
+        "tooltip": false
+    },
+    "battery": {
+        "format": "{capacity}%",
+        "states": {
+            "warning": 25,
+            "critical": 10
+        },
+        "tooltip": false
+    },
+    "clock": {
+        "format": "{:%a %d %b  %H:%M}",
+        "tooltip-format": "{calendar}"
+    }
+}

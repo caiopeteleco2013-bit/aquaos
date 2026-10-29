@@ -1,0 +1,7 @@
+# Módulo Calamares da AquaOS: gera o configuration.nix no disco alvo e
+# roda o nixos-install. Interface python (main.py).
+---
+type:      "job"
+name:      "aquaos"
+interface: "python"
+script:    "main.py"
