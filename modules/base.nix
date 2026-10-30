@@ -62,7 +62,10 @@ in
     swww                        # papel de parede
     grim
     slurp                       # capturas de tela (⇧⌘3 / ⇧⌘4)
-    polkit_gnome                # agente de autenticação
+    # Agente de autenticação polkit do projeto Hyprland (Qt6, sem Plasma).
+    # Substitui o polkit-gnome: diálogo moderno, mesma sessão Wayland e
+    # cobre também os popups do kpmcore (motor de partição do Calamares).
+    hyprpolkitagent
   ];
 
   # =================================================== REDE E ÁUDIO

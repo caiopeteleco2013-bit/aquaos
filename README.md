@@ -90,8 +90,8 @@ com QEMU/KVM.
 
 ## Instalar em disco (o Calamares)
 
-1. Boot na ISO (autologin) → o instalador abre (ou rode
-   `pkexec calamares` no Terminal).
+1. Boot na ISO (autologin) → o instalador abre (ou clique "Instalar
+   AquaOS" no menu ⌘Espaço; log em `~/.cache/aquaos-installer.log`).
 2. Telas: idioma → teclado → usuário → particionamento → resumo → instalar.
 3. O instalador:
    - particiona o disco e monta o sistema;

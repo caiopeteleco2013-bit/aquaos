@@ -3,6 +3,38 @@
 # boot direto na sessão Hyprland, sem tela de login.
 { lib, pkgs, ... }:
 
+let
+  # Lançador do instalador. Na ISO, sobe o Calamares via sudo (o perfil
+  # installation-device do NixOS libera sudo SEM SENHA para o grupo wheel —
+  # nada de agente na corrida de boot). O modo gráfico padrão é xcb
+  # (XWayland), exatamente como os desktops grandes fazem; sem modo X11,
+  # cai para wayland. No-op fora da ISO. Log em ~/.cache/aquaos-installer.log.
+  startInstalador = pkgs.writeShellScriptBin "aquaos-start-installer" ''
+    test -e /etc/aquaos/live || exit 0
+    LOG="$HOME/.cache/aquaos-installer.log"
+    mkdir -p "$(dirname "$LOG")"
+    # xcb = XWayland (modo dos desktops grandes); sem X11, cai para wayland.
+    if [ -n "''${DISPLAY:-}" ]; then PLAT=xcb; else PLAT=wayland; fi
+    {
+      echo "==== $(date) — Instalador AquaOS"
+      echo "DISPLAY=''${DISPLAY:-} WAYLAND_DISPLAY=''${WAYLAND_DISPLAY:-} QT_QPA_PLATFORM=$PLAT"
+    } >>"$LOG"
+    /run/wrappers/bin/sudo env \
+      QT_QPA_PLATFORM="$PLAT" DISPLAY="''${DISPLAY:-}" \
+      WAYLAND_DISPLAY="''${WAYLAND_DISPLAY:-}" XDG_RUNTIME_DIR="''${XDG_RUNTIME_DIR:-}" \
+      "${pkgs.calamares-nixos}/bin/calamares" >>"$LOG" 2>&1
+  '';
+
+  # Atalho de segurança: o instalador fica no menu (Wofi/Dock) para
+  # ser relançado à mão se o exec-once do Hyprland falhar por qualquer motivo.
+  instaladorItem = pkgs.makeDesktopItem {
+    name = "aquaos-installer";
+    desktopName = "Instalar AquaOS";
+    exec = "/run/current-system/sw/bin/aquaos-start-installer";
+    comment = "Instalador gráfico do AquaOS";
+    categories = [ "System" ];
+  };
+in
 {
   # ==================================================================
   # Calamares — o instalador gráfico do AquaOS
@@ -16,20 +48,29 @@
     calamares-nixos-extensions  # módulos/branding oficiais base
     glibcLocales
   ]
-  # Plugin Qt para Wayland (Calamares nativo na sessão Hyprland).
-  # Protegido contra variações de nome entre versões do nixpkgs —
-  # se ausente, o Calamares cai no XWayland do Hyprland.
-  ++ lib.optionals (pkgs ? libsForQt5 && pkgs.libsForQt5 ? qt5 && pkgs.libsForQt5.qt5 ? qtwayland) [
-    pkgs.libsForQt5.qt5.qtwayland
-  ];
+  # Calamares é Qt 6 neste pino do nixpkgs: plugin Wayland da Qt6
+  # (o modo gráfico padrão do lançador é xcb/XWayland; o wayland é fallback).
+  ++ lib.optionals (pkgs ? qt6 && pkgs.qt6 ? qtwayland) [ pkgs.qt6.qtwayland ]
+  ++ [ startInstalador instaladorItem ];
 
   # O instalador pode escolher qualquer locale do glibc.
   i18n.supportedLocales = [ "all" ];
 
-  # Sobe o Calamares via pkexec sem senha para usuários do grupo wheel (ISO).
+  # Política polkit com os action ids REAIS usados nesta cadeia:
+  #  - "org.freedesktop.policykit.exec": o id que o pkexec usa quando o
+  #    programa não tem .policy própria (confirmado em src/programs/pkexec.c,
+  #    linhas 366–367 do polkit) — é por isso que a regra antiga, que só
+  #    citava "com.github.calamares.calamares", nunca casava;
+  #  - "com.ubuntu.pkexec.*": id derivado do nome do programa pelo pkexec;
+  #  - "com.github.calamares.calamares": action do Calamares;
+  #  - "com.kde.kpmcore.*": motor de partição (etapa de disco).
   security.polkit.extraConfig = ''
     polkit.addRule(function(action, subject) {
-      if (action.id == "com.github.calamares.calamares" && subject.isInGroup("wheel")) {
+      if (!subject.isInGroup("wheel")) return;
+      if (action.id == "org.freedesktop.policykit.exec" ||
+          action.id == "com.github.calamares.calamares" ||
+          action.id.indexOf("com.ubuntu.pkexec.") === 0 ||
+          action.id.indexOf("com.kde.kpmcore.") === 0) {
         return polkit.Result.YES;
       }
     });
