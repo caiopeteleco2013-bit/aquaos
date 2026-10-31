@@ -1,21 +1,41 @@
-// Dock (base da tela) estilo macOS: os ícones das janelas abertas, em
-// destaque. Implementado com o taskbar do Waybar sobre o protocolo
-// foreign-toplevel (que o KWin também implementa) — no lugar do
-// plasmashell, parte da shell própria do AquaOS.
 {
-    "layer": "top",
     "position": "bottom",
     "height": 66,
 
-    "modules-center": ["wlr/taskbar"],
+    "modules-center": [
+        "custom/terminal",
+        "custom/finder",
+        "custom/safari",
+        "custom/captura",
+        "custom/sair"
+    ],
 
-    "wlr/taskbar": {
-        "format": "{icon}",
-        "icon-theme": "WhiteSur",
-        "icon-size": 44,
-        "spacing": 6,
-        "tooltip": false,
-        "on-click": "activate",
-        "on-click-middle": "close"
+    // Dock estático da shell própria: KWin não implementa o protocolo
+    // foreign-toplevel (lista de janelas) que barras wlroots usam, então
+    // o dock fixo com launchers é o que funciona em 100% dos casos.
+    "custom/terminal": {
+        "format": "🖥",
+        "on-click": "kitty",
+        "tooltip": false
+    },
+    "custom/finder": {
+        "format": "📁",
+        "on-click": "nautilus",
+        "tooltip": false
+    },
+    "custom/safari": {
+        "format": "🌐",
+        "on-click": "firefox",
+        "tooltip": false
+    },
+    "custom/captura": {
+        "format": "📷",
+        "on-click": "spectacle -r",
+        "tooltip": false
+    },
+    "custom/sair": {
+        "format": "⏻",
+        "on-click": "aquaos-sair",
+        "tooltip": false
     }
 }

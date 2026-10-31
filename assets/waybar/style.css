@@ -17,22 +17,30 @@ window#waybar {
     font-weight: 600;
 }
 
+/* Botão ⌘ da barra de menu */
 #custom-menu {
     padding: 0 12px;
     font-size: 14px;
 }
 
-#taskbar button {
-    padding: 4px 8px;
-    margin: 3px 3px;
+/* Dock (base): ícones fixos de launcher */
+#custom-terminal,
+#custom-finder,
+#custom-safari,
+#custom-captura,
+#custom-sair {
+    padding: 6px 14px;
+    margin: 3px;
+    font-size: 20px;
     border-radius: 10px;
-    background: transparent;
 }
-#taskbar button:hover {
+#custom-terminal:hover,
+#custom-finder:hover,
+#custom-safari:hover,
+#custom-captura:hover,
+#custom-sair:hover,
+#custom-menu:hover {
     background: rgba(255, 255, 255, 0.14);
-}
-#taskbar button.active {
-    background: rgba(255, 255, 255, 0.24);
 }
 
 #tray,

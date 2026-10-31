@@ -47,7 +47,32 @@ let
     # compositor (equivalente ao papel do Hyprland no design original)
     "${pkgs.kdePackages.kwin}/bin/kwin_wayland" --xwayland &
     KWIN=$!
-    sleep 2
+
+    # ============================================================
+    # IMPORTANTE: os clientes da shell NÃO são filhos do compositor
+    # (eram, no Hyprland, via exec-once), então o ambiente de sessão —
+    # WAYLAND_DISPLAY/DISPLAY — não nasce com eles: descobrimos aqui,
+    # observando os sockets que o KWin/XWayland acabaram de criar.
+    # ============================================================
+    SOCK=""
+    for i in $(seq 1 100); do
+      for s in "$XDG_RUNTIME_DIR"/wayland-*; do
+        [ -S "$s" ] && SOCK="$s"
+      done
+      [ -n "$SOCK" ] && break
+      sleep 0.2
+    done
+    if [ -z "$SOCK" ]; then
+      echo "ERRO: compositor não criou socket em 20s" >>"$LOG"
+      exit 1
+    fi
+    export WAYLAND_DISPLAY="${SOCK##*/}"
+
+    XD=""
+    for d in /tmp/.X11-unix/X*; do [ -S "$d" ] && XD="${d##*/X}"; done
+    [ -n "$XD" ] && export DISPLAY=":$XD"
+
+    echo "WAYLAND_DISPLAY=$WAYLAND_DISPLAY DISPLAY=${DISPLAY:-—}" >>"$LOG"
 
     # ---------- shell própria AquaOS (no lugar do plasmashell) ----------
     # papel de parede Sonoma (layer-shell, desenha sobre o KWin)
@@ -57,9 +82,13 @@ let
     "${pkgs.waybar}/bin/waybar" -c /etc/aquaos/waybar-dock.jsonc -s /etc/aquaos/waybar-style.css &
     # agente polkit (diálogos de senha; cobre o kpmcore do Calamares)
     "${pkgs.hyprpolkitagent}/libexec/hyprpolkitagent" &
-    # daemon de atalhos globais do KDE (resolve [services] e [kwin])
+    # daemon de atalhos globais do KDE (resolve [services] e [kwin]);
+    # o binário varia entre bin/ e libexec/ conforme a versão
     ${lib.optionalString (pkgs.kdePackages ? kglobalaccel) ''
-      "${pkgs.kdePackages.kglobalaccel}/bin/kglobalaccel" &
+      for KGA in "${pkgs.kdePackages.kglobalaccel}/bin/kglobalaccel" \
+                 "${pkgs.kdePackages.kglobalaccel}/libexec/kglobalaccel"; do
+        if [ -x "$KGA" ]; then "$KGA" & break; fi
+      done
     ''}
     # na ISO: abre o instalador AquaOS automaticamente (no-op fora dela)
     /run/current-system/sw/bin/aquaos-start-installer >/dev/null 2>&1 &
