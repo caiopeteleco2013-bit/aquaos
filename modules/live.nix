@@ -4,6 +4,36 @@
 { lib, pkgs, ... }:
 
 let
+  # ==================================================================
+  # Calamares AquaOS — o mesmo embrulho do wrapper oficial
+  # (calamares-nixos), mas com os dados da distribuição na FRENTE.
+  #
+  # Por que é preciso: o Calamares 3.4.2 resolve a configuração em
+  # Calamares::extraConfigDirs()/extraDataDirs() — derivadas do
+  # XDG_CONFIG_DIRS e XDG_DATA_DIRS (setados pelo `--xdg-config`), e o
+  # wrapper oficial injeta NELES apenas os paths de
+  # calamares-nixos-extensions. Resultado: o settings.conf, o módulo e o
+  # branding aquecem os padrões oficiais e o /etc/calamares da AquaOS
+  # é ignorado (o bug do teste da ISO #10: instalação genérica +
+  # branding genérico). Cada entrada do XDG vira, na ordem, o par
+  # "<x>/calamares" e "<x>" (Calamares::mungeEnvironment); entregar /etc
+  # por último no makeWrapper (o prefixo põe o novo valor na frente)
+  # deixa /etc/calamares/settings.conf, /etc/calamares/branding/aquaos e
+  # /etc/calamares/modules/aquaos como PRIMEIROS candidatos — e as
+  # configurações dos módulos base (locale.conf etc.) caem para as
+  # extensions se não existirem aqui.
+  # ==================================================================
+  calamaresAquaos = pkgs.calamares.override {
+    extraWrapperArgs = [
+      "--prefix XDG_DATA_DIRS : ${pkgs.calamares-nixos-extensions}/share"
+      "--prefix XDG_CONFIG_DIRS : ${pkgs.calamares-nixos-extensions}/etc"
+      # /etc por ÚLTIMO = primeiro nos candidatos de busca.
+      "--prefix XDG_DATA_DIRS : /etc"
+      "--prefix XDG_CONFIG_DIRS : /etc"
+      "--add-flag --xdg-config"
+    ];
+  };
+
   # Lançador do instalador. Na ISO, sobe o Calamares via sudo (o perfil
   # installation-device do NixOS libera sudo SEM SENHA para o grupo wheel —
   # nada de agente na corrida de boot). O modo gráfico padrão é xcb
@@ -22,7 +52,7 @@ let
     /run/wrappers/bin/sudo env \
       QT_QPA_PLATFORM="$PLAT" DISPLAY="''${DISPLAY:-}" \
       WAYLAND_DISPLAY="''${WAYLAND_DISPLAY:-}" XDG_RUNTIME_DIR="''${XDG_RUNTIME_DIR:-}" \
-      "${pkgs.calamares-nixos}/bin/calamares" >>"$LOG" 2>&1
+      "${calamaresAquaos}/bin/calamares" >>"$LOG" 2>&1
   '';
 
   # Atalho de segurança: o instalador fica no menu (Wofi/Dock) para
@@ -44,8 +74,10 @@ in
   programs.partition-manager.enable = true;
 
   environment.systemPackages = with pkgs; [
-    calamares-nixos             # Calamares já embrulhado com os caminhos oficiais do NixOS
-    calamares-nixos-extensions  # módulos/branding oficiais base
+    calamaresAquaos             # Calamares embrulhado com os dados da AquaOS na frente
+    calamares-nixos-extensions  # confs dos módulos base (locale.conf etc.),
+                                # resolvidas via XDG_* quando a AquaOS não
+                                # sobrepõe cada módulo
     glibcLocales
   ]
   # Calamares é Qt 6 neste pino do nixpkgs: plugin Wayland da Qt6
@@ -79,8 +111,14 @@ in
   '';
 
   # ==================================================================
-  # Arquivos do instalador AquaOS (sobrepõem os "nixos" upstream:
-  # o Calamares busca /etc/calamares com precedência sobre o wrapper).
+  # Arquivos do instalador AquaOS — montados exatamente onde os
+  # candidatos de busca do Calamares esperam, com /etc na frente dos
+  # XDG_* (calamaresAquaos acima):
+  #   - /etc/calamares/settings.conf: primeiro candidato de settings;
+  #   - /etc/calamares/branding/aquaos: primeiro candidato de branding
+  #     (componentName aquaos = nome do diretório, exigido pelo Calamares);
+  #   - /etc/calamares/modules/aquaos: módulo python "aquaos", dado pela
+  #     entrada absoluta de modules-search no settings.conf.
   # ==================================================================
   environment.etc = {
     "calamares/settings.conf".source = ../installer/settings.conf;
