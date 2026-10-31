@@ -66,13 +66,13 @@ let
       echo "ERRO: compositor não criou socket em 20s" >>"$LOG"
       exit 1
     fi
-    export WAYLAND_DISPLAY="${SOCK##*/}"
+    export WAYLAND_DISPLAY="''${SOCK##*/}"
 
     XD=""
-    for d in /tmp/.X11-unix/X*; do [ -S "$d" ] && XD="${d##*/X}"; done
+    for d in /tmp/.X11-unix/X*; do [ -S "$d" ] && XD="''${d##*/X}"; done
     [ -n "$XD" ] && export DISPLAY=":$XD"
 
-    echo "WAYLAND_DISPLAY=$WAYLAND_DISPLAY DISPLAY=${DISPLAY:-—}" >>"$LOG"
+    echo "WAYLAND_DISPLAY=$WAYLAND_DISPLAY DISPLAY=$DISPLAY" >>"$LOG"
 
     # ---------- shell própria AquaOS (no lugar do plasmashell) ----------
     # papel de parede Sonoma (layer-shell, desenha sobre o KWin)
