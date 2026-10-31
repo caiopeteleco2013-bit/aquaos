@@ -1,0 +1,35 @@
+# Atalhos globais do AquaOS — SUPER = tecla ⌘ (Win/Command).
+#
+# Formato KConfig: Nome=atalho,atalhoAlternativo,descrição
+#   * [kwin]     → ações internas do compositor (nomes registrados pelo KWin)
+#   * [services] → lançar aplicativos pelo arquivo .desktop em
+#     share/applications (os mesmos que aparecem no menu); o daemon
+#     kglobalaccel resolve via KService — por isso os nomes precisam
+#     bater exatamente com os arquivos aquaos-*.desktop.
+#
+# Se um atalho não casar com uma ação do KWin, ele fica sem efeito (sem
+# travar nada) — o trio da barra (botão ⌘ / Spotlight) e o Dock cobrem o
+# lançamento por clique em qualquer caso.
+
+[kwin]
+Switch to Desktop 1=Meta+1,,Espaço 1
+Switch to Desktop 2=Meta+2,,Espaço 2
+Switch to Desktop 3=Meta+3,,Espaço 3
+Switch to Desktop 4=Meta+4,,Espaço 4
+Window Close=Meta+Q,,Fechar janela
+Window Fullscreen=Meta+Up,,Tela cheia
+
+[services][aquaos-terminal.desktop]
+_launch=Meta+Return,,Terminal
+
+[services][aquaos-menu.desktop]
+_launch=Meta+Space,,Spotlight
+
+[services][aquaos-finder.desktop]
+_launch=Meta+E,,Finder
+
+[services][aquaos-captura.desktop]
+_launch=Meta+Shift+S,,Captura de tela
+
+[services][aquaos-sair.desktop]
+_launch=Meta+Shift+Q,,Encerrar sessão

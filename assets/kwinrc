@@ -1,0 +1,10 @@
+# kwinrc — opções do KWin, o compositor do AquaOS (KDE sem plasmashell).
+#
+# O KWin não tileia: janelas flutuam por natureza (comportamento macOS de
+# graça — nada de regras tipo "float true, match:class ..."), as sombras do
+# Breeze já vêm ativas e o modo gráfico se adapta sozinho à GPU da VM
+# (llvmpipe incluso, por isso não trava no VirtualBox).
+# Aqui só garantimos o blur translúcido.
+
+[Plugins]
+blurEnabled=true

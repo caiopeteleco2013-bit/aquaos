@@ -1,8 +1,9 @@
 # modules/base.nix — a plataforma AquaOS.
 #
 # Este é o coração do sistema: o kernel atualizado, a sessão gráfica com
-# cara de macOS (Hyprland), a tela de login (ReGreet), a barra de menu
-# (Waybar), o Dock (nwg-dock), o Spotlight (Wofi) e o tema visual mesmo.
+# cara de macOS (compositor KWin do KDE — sem plasmashell — mais uma shell
+# própria: barra de menu Waybar, Dock, Spotlight Wofi), a tela de login
+# (ReGreet) e o tema visual mesmo.
 #
 # Ele é usado em dois lugares com o MESMO conteúdo:
 #   * pela ISO live (importado por configuration.nix);
@@ -28,6 +29,91 @@ let
   # Ícones estilo macOS (idem: fallback seguro entre versões do nixpkgs).
   tema-icone =
     if pkgs ? whitesur-icon-theme then pkgs.whitesur-icon-theme else pkgs.adwaita-icon-theme;
+
+  # ==================================================================
+  # Sessão AquaOS: KWin como compositor + shell própria (sem plasmashell).
+  # Janelas flutuam de graça (KWin não tileia), sombras/blur nativos do
+  # KWin, e o modo gráfico se adapta à VM (llvmpipe incluso).
+  # ==================================================================
+  startSessao = pkgs.writeShellScriptBin "aquaos-desktop" ''
+    export PATH="/run/current-system/sw/bin:$PATH"
+    export XDG_CURRENT_DESKTOP="AquaOS:KDE"
+    export XDG_SESSION_TYPE="wayland"
+    export QT_QPA_PLATFORM="''${QT_QPA_PLATFORM:-wayland}"
+    LOG="$HOME/.cache/aquaos-session.log"
+    mkdir -p "$(dirname "$LOG")"
+    echo "==== $(date) — sessão AquaOS (KWin + shell própria)" >>"$LOG"
+
+    # compositor (equivalente ao papel do Hyprland no design original)
+    "${pkgs.kdePackages.kwin}/bin/kwin_wayland" --xwayland &
+    KWIN=$!
+    sleep 2
+
+    # ---------- shell própria AquaOS (no lugar do plasmashell) ----------
+    # papel de parede Sonoma (layer-shell, desenha sobre o KWin)
+    "${pkgs.swaybg}/bin/swaybg" -i /run/current-system/sw/share/backgrounds/sonoma.png -m fill &
+    # menu bar (topo) + dock (base) — Waybar em duas barras
+    "${pkgs.waybar}/bin/waybar" -c /etc/aquaos/waybar-top.jsonc -s /etc/aquaos/waybar-style.css &
+    "${pkgs.waybar}/bin/waybar" -c /etc/aquaos/waybar-dock.jsonc -s /etc/aquaos/waybar-style.css &
+    # agente polkit (diálogos de senha; cobre o kpmcore do Calamares)
+    "${pkgs.hyprpolkitagent}/libexec/hyprpolkitagent" &
+    # daemon de atalhos globais do KDE (resolve [services] e [kwin])
+    ${lib.optionalString (pkgs.kdePackages ? kglobalaccel) ''
+      "${pkgs.kdePackages.kglobalaccel}/bin/kglobalaccel" &
+    ''}
+    # na ISO: abre o instalador AquaOS automaticamente (no-op fora dela)
+    /run/current-system/sw/bin/aquaos-start-installer >/dev/null 2>&1 &
+
+    # a sessão termina quando o compositor termina
+    wait "$KWIN"
+    "${pkgs.procps}/bin/pkill" -P "$$" || true
+  '';
+
+  # Sessão registrada — aparece na tela de login (ReGreet) do sistema
+  # instalado como "AquaOS".
+  sessaoAquaOS = pkgs.writeTextDir "share/wayland-sessions/aquaos.desktop" ''
+    [Desktop Entry]
+    Type=Application
+    Name=AquaOS
+    Comment=AquaOS — KWin + shell própria (macOS-style)
+    Exec=/run/current-system/sw/bin/aquaos-desktop
+    DesktopNames=AquaOS
+  '';
+
+  # Aplicativos da shell (também alimentam o Spotlight e os atalhos
+  # [services] do kglobalaccel — os nomes dos arquivos são o elo).
+  itemTerminal = pkgs.makeDesktopItem {
+    name = "aquaos-terminal";
+    desktopName = "Terminal";
+    exec = "${pkgs.kitty}/bin/kitty";
+    categories = [ "System" "TerminalEmulator" ];
+  };
+  menuItem = pkgs.makeDesktopItem {
+    name = "aquaos-menu";
+    desktopName = "Spotlight";
+    exec = "${pkgs.wofi}/bin/wofi --show drun --prompt Buscar --style /etc/aquaos/wofi.css";
+    categories = [ "Utility" ];
+  };
+  itemFinder = pkgs.makeDesktopItem {
+    name = "aquaos-finder";
+    desktopName = "Finder";
+    exec = "${pkgs.nautilus}/bin/nautilus";
+    categories = [ "GTK" "Utility" ];
+  };
+  itemCaptura = pkgs.makeDesktopItem {
+    name = "aquaos-captura";
+    desktopName = "Captura de tela";
+    exec = "${pkgs.kdePackages.spectacle}/bin/spectacle -r";
+    categories = [ "Utility" ];
+  };
+  scriptSair = pkgs.writeShellScriptBin "aquaos-sair"
+    "exec ${pkgs.systemd}/bin/loginctl terminate-session";
+  itemSair = pkgs.makeDesktopItem {
+    name = "aquaos-sair";
+    desktopName = "Encerrar sessão";
+    exec = "${scriptSair}/bin/aquaos-sair";
+    categories = [ "System" ];
+  };
 in
 {
   # ============================================================ FONTES
@@ -53,19 +139,25 @@ in
     gvfs                        # montagem/disco no Finder (nautilus)
 
     # Interface e serviços de sessão
-    waybar                      # barra de menu
-    nwg-dock-hyprland           # Dock inferior
-    wofi                        # Spotlight (⌘Espaço)
-    kitty                       # Terminal
+    kdePackages.kwin           # compositor/WM (sem plasmashell)
+    swaybg                     # papel de parede (layer-shell)
+    kdePackages.spectacle      # captura de tela (⇧⌘S)
+    hyprpolkitagent            # agente polkit Qt6 do projeto Hyprland
+    waybar                     # barra de menu (topo) + Dock (base)
+    wofi                       # Spotlight (⌘Espaço)
+    kitty                      # Terminal
     nautilus                    # Finder
     firefox                     # Safari
-    swww                        # papel de parede
-    grim
-    slurp                       # capturas de tela (⇧⌘3 / ⇧⌘4)
-    # Agente de autenticação polkit do projeto Hyprland (Qt6, sem Plasma).
-    # Substitui o polkit-gnome: diálogo moderno, mesma sessão Wayland e
-    # cobre também os popups do kpmcore (motor de partição do Calamares).
-    hyprpolkitagent
+
+    # Shell própria: sessão, atalhos e ícones de lançamento
+    startSessao
+    sessaoAquaOS
+    itemTerminal
+    menuItem
+    itemFinder
+    itemCaptura
+    scriptSair
+    itemSair
   ];
 
   # =================================================== REDE E ÁUDIO
@@ -85,12 +177,13 @@ in
   hardware.enableRedistributableFirmware = lib.mkDefault true;
 
   # ========================================================= SESSÃO
-  programs.hyprland.enable = true;
+  # KWin entra pelo aquaos.desktop (share/wayland-sessions, listado na
+  # ReGreet) e executa o aquaos-desktop – nenhuma shell Plasma é ligada.
+  # O agente polkit, a barra e o dock sobem dentro do próprio script.
 
   xdg.portal = {
     enable = true;
     extraPortals = with pkgs; [
-      xdg-desktop-portal-hyprland
       xdg-desktop-portal-gtk
     ];
   };
@@ -134,18 +227,19 @@ in
   # ciados por caminhos relativos — a mesma árvore copiada ao disco).
   # ==================================================================
   environment.etc = {
-    # ---- Compositor Hyprland (comportamento macOS) ----
-    "hypr/hyprland.conf".source = ../assets/hyprland.conf;
-    # Fallback via XDG (alguns builds do Hyprland só olham /etc/xdg):
-    "xdg/hypr/hyprland.conf".source = ../assets/hyprland.conf;
+    # ---- Compositor KWin (comportamento macOS; sem plasmashell) ----
+    "xdg/kwinrc".source = ../assets/kwinrc;
+    # Atalhos globais (kwin + serviços) e preferências Qt globais
+    "xdg/kglobalshortcutsrc".source = ../assets/kglobalshortcutsrc;
+    "xdg/kdeglobals".source = ../assets/kdeglobals;
 
-    # ---- Barra de menu ----
-    "xdg/waybar/config.jsonc".source = ../assets/waybar/config.jsonc;
-    "xdg/waybar/style.css".source = ../assets/waybar/style.css;
+    # ---- Barra de menu (topo) + Dock (base): shell própria ----
+    "aquaos/waybar-top.jsonc".source = ../assets/waybar/top.jsonc;
+    "aquaos/waybar-dock.jsonc".source = ../assets/waybar/dock.jsonc;
+    "aquaos/waybar-style.css".source = ../assets/waybar/style.css;
 
-    # ---- Spotlight (Wofi) e Dock (lista fixa) ----
+    # ---- Spotlight (Wofi) ----
     "aquaos/wofi.css".source = ../assets/wofi.css;
-    "aquaos/nwg-dock-pinned".source = ../assets/nwg-dock-pinned;
 
     # ---- Tema global GTK3/GTK4 (botões à esquerda, como o macOS) ----
     "xdg/gtk-3.0/settings.ini".text = ''

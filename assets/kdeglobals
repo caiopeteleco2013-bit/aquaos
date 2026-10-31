@@ -1,0 +1,6 @@
+# Preferências globais KDE/Qt no AquaOS (apps Qt: Calamares etc.)
+[General]
+font=Inter,10,-1,5,50,0,0,0,0,0
+
+[Icons]
+Theme=WhiteSur

@@ -48,8 +48,8 @@ cfghead = """\
   imports =
     [ # Configuração automática do hardware desta máquina.
       ./hardware-configuration.nix
-      # Plataforma AquaOS: compositor Hyprland, tela de login, barra de
-      # menu, Dock, Spotlight, temas e aplicações base.
+      # Plataforma AquaOS: compositor KWin, tela de login, barra de menu,
+      # Dock, Spotlight, temas e aplicações base.
       ./modules/base.nix
     ];
 

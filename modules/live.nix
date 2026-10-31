@@ -1,6 +1,6 @@
 # live.nix — ajustes exclusivos da ISO live.
 # Inclui o instalador gráfico Calamares (integração oficial NixOS) e o
-# boot direto na sessão Hyprland, sem tela de login.
+# boot direto na sessão AquaOS (KWin + shell própria), sem tela de login.
 { lib, pkgs, ... }:
 
 let
@@ -26,7 +26,7 @@ let
   '';
 
   # Atalho de segurança: o instalador fica no menu (Wofi/Dock) para
-  # ser relançado à mão se o exec-once do Hyprland falhar por qualquer motivo.
+  # ser relançado à mão se a sessão não o abrir por qualquer motivo.
   instaladorItem = pkgs.makeDesktopItem {
     name = "aquaos-installer";
     desktopName = "Instalar AquaOS";
@@ -63,14 +63,16 @@ in
   #    citava "com.github.calamares.calamares", nunca casava;
   #  - "com.ubuntu.pkexec.*": id derivado do nome do programa pelo pkexec;
   #  - "com.github.calamares.calamares": action do Calamares;
-  #  - "com.kde.kpmcore.*": motor de partição (etapa de disco).
+  #  - "com.kde.kpmcore.*" e "org.kde.kpmcore.*": motor de partição
+  #    (as duas formas de prefixo usadas pelas versões do kpmcore).
   security.polkit.extraConfig = ''
     polkit.addRule(function(action, subject) {
       if (!subject.isInGroup("wheel")) return;
       if (action.id == "org.freedesktop.policykit.exec" ||
           action.id == "com.github.calamares.calamares" ||
           action.id.indexOf("com.ubuntu.pkexec.") === 0 ||
-          action.id.indexOf("com.kde.kpmcore.") === 0) {
+          action.id.indexOf("com.kde.kpmcore.") === 0 ||
+          action.id.indexOf("org.kde.kpmcore.") === 0) {
         return polkit.Result.YES;
       }
     });
@@ -90,7 +92,7 @@ in
     "aquaos/base/modules/base.nix".source = ../modules/base.nix;
     "aquaos/base/assets".source = ../assets;
 
-    # Marcador: o Hyprland abre o Calamares automaticamente na ISO.
+    # Marcador: a sessão AquaOS abre o Calamares automaticamente na ISO.
     "aquaos/live".text = "1\n";
   };
 
@@ -99,7 +101,7 @@ in
   # `nixos` (criado pelo perfil installation-device do nixpkgs).
   # ==================================================================
   services.greetd.settings.initial_session = {
-    command = "${pkgs.hyprland}/bin/Hyprland";
+    command = "/run/current-system/sw/bin/aquaos-desktop";
     user = "nixos";
   };
 

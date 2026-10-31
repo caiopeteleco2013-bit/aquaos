@@ -11,10 +11,9 @@ trocar em uma linha.
 |---|---|
 | kernel Linux (`linuxPackages_latest`) | o coração do sistema (troque por `zen`/`hardened` em uma linha) |
 | Nix + flakes | as ferramentas de build da distribuição inteira |
-| Hyprland | compositor Wayland (cantos, blur, sombras, animações "mac") |
+| KWin (KDE, sem plasmashell) | compositor Wayland — janelas flutuam de graça, sombras + blur nativos (mais estável em VM) |
 | ReGreet (greetd + cage) | tela de login estilo macOS |
-| Waybar | barra de menu (topo) |
-| nwg-dock-hyprland | Dock (base) |
+| Waybar (2 barras) | barra de menu (topo) **e** Dock (base) — a shell própria |
 | Wofi | Spotlight (⌘Espaço) |
 | WhiteSur + Bibata + Inter | temas/ícones/cursor/fonte estilo macOS (a SF Pro é proprietária da Apple) |
 | Calamares | instalador gráfico (integração oficial `calamares-nixos-extensions`) |
@@ -29,11 +28,12 @@ aquaos/
 │   ├── base.nix                 # a plataforma AquaOS: sessão gráfica + tema
 │   └── live.nix                 # extras da ISO: Calamares + autologin
 ├── assets/
-│   ├── hyprland.conf            # compositor (comportamento macOS)
-│   ├── waybar/{config.jsonc,style.css}  # barra de menu
-│   ├── wofi.css                 # Spotlight
-│   ├── nwg-dock-pinned          # apps fixos do Dock
-│   └── wallpaper.py             # gera o papel de parede (stdlib pura)
+│   ├── kwinrc                    # compositor KWin (blur; janelas flutuam de graça)
+│   ├── kglobalshortcutsrc        # atalhos globais (⌘ = SUPER)
+│   ├── kdeglobals                # fonte/ícones globais dos apps Qt
+│   ├── waybar/{top.jsonc,dock.jsonc,style.css}  # menu bar + Dock
+│   ├── wofi.css                  # Spotlight
+│   └── wallpaper.py              # gera o papel de parede (stdlib pura)
 └── installer/
     ├── settings.conf            # fluxo de telas do Calamares
     ├── branding/aquaos/         # logo, cores e slideshow do instalador
@@ -84,9 +84,9 @@ tem 2.000 min/mês no plano gratuito.
 3. A sessão sobe direto no desktop AquaOS (autologin do usuário `nixos`)
    e o instalador abre automaticamente.
 
-Dica: no VirtualBox, a aceleração 3D do Hyprland pode falhar.
-Para o melhor resultado, use hardware real ou uma máquina Linux
-com QEMU/KVM.
+Dica: o KWin/KDE lida muito bem com uma VM sem aceleração 3D
+(VirtualBox incluso) — a sessão usa o renderizador por software
+(llvmpipe) se precisar, sem travar como o Hyprland fazia.
 
 ## Instalar em disco (o Calamares)
 
@@ -122,8 +122,10 @@ recomenda) — torne-a útil com `sudo passwd root` se quiser.
 
 - **Kernel:** `configuration.nix` → `boot.kernelPackages = pkgs.linuxPackages_zen;`
 - **Papel de parede:** `assets/wallpaper.py` → lista `PARADAS` (cores do gradiente).
-- **Atalhos/gestos/estética:** `assets/hyprland.conf`.
-- **Barra e Dock:** `assets/waybar/` e `assets/nwg-dock-pinned`.
+- **Atalhos:** `assets/kglobalshortcutsrc` (SUPER = ⌘).
+- **Compositor/estética das janelas:** `assets/kwinrc` (blur; as sombras
+  e os cantos arredondados do Breeze já vêm ativos por padrão).
+- **Barra e Dock:** `assets/waybar/{top.jsonc,dock.jsonc,style.css}`.
 - **Tema/tema GTK:** `modules/base.nix` (WhiteSur; fallback automático para Orchis).
 
 Depois de editar, basta reconstruir: `nix build .#aquaos-iso` (nova ISO).

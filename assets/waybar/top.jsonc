@@ -1,19 +1,21 @@
-// Barra de menu estilo macOS (menu bar): workspaces à esquerda,
-// nome do app em foco ao lado, e tray/volume/rede/bateria/hora à direita.
+// Barra de menu estilo macOS (menu bar): app em foco + botão ⌘ à esquerda,
+// tray/volume/rede/bateria/hora à direita. Roda sobre o KWin — parte da
+// shell própria do AquaOS (sem plasmashell).
 {
     "layer": "top",
     "position": "top",
     "height": 28,
 
-    "modules-left": ["hyprland/workspaces", "hyprland/window"],
+    "modules-left": ["wlr/window", "custom/menu"],
     "modules-right": ["tray", "pulseaudio", "network", "battery", "clock"],
 
-    "hyprland/workspaces": {
-        "format": "{index}",
+    "wlr/window": {
+        "format": "{}",
         "tooltip": false
     },
-    "hyprland/window": {
-        "format": "{}",
+    "custom/menu": {
+        "format": "⌘",
+        "on-click": "wofi --show drun --prompt Buscar --style /etc/aquaos/wofi.css",
         "tooltip": false
     },
 

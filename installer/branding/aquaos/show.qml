@@ -58,7 +58,7 @@ Presentation
             anchors.horizontalCenter: titulo2.horizontalCenter
             anchors.top: titulo2.bottom
             text: "O AquaOS escreve um configuration.nix completo no seu disco:<br/>" +
-                  "idioma, teclado, usuário, Hyprland e temas — tudo declarativo.<br/>" +
+                  "idioma, teclado, usuário, desktop KWin e temas — tudo declarativo.<br/>" +
                   "<b>Toda mudança do sistema é um arquivo versionado,</b> e não um<br/>" +
                   "estado acumulado de pacotes."
         }
