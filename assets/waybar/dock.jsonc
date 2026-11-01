@@ -13,28 +13,33 @@
     // Dock estático da shell própria: KWin não implementa o protocolo
     // foreign-toplevel (lista de janelas) que barras wlroots usam, então
     // o dock fixo com launchers é o que funciona em 100% dos casos.
+    //
+    // Ícones reais: glifos temáticos do Nerd Font (a JetBrainsMono Nerd
+    // Font vem no base.nix). Codepoints conferidos no glyphnames.json do
+    // projeto nerd-fonts: fa-terminal=f120, fa-folder=f07b, fa-globe=f0ac,
+    // fa-camera=f030, fa-power_off=f011.
     "custom/terminal": {
-        "format": "🖥",
+        "format": "\uf120",
         "on-click": "kitty",
         "tooltip": false
     },
     "custom/finder": {
-        "format": "📁",
+        "format": "\uf07b",
         "on-click": "nautilus",
         "tooltip": false
     },
     "custom/safari": {
-        "format": "🌐",
+        "format": "\uf0ac",
         "on-click": "firefox",
         "tooltip": false
     },
     "custom/captura": {
-        "format": "📷",
+        "format": "\uf030",
         "on-click": "spectacle -r",
         "tooltip": false
     },
     "custom/sair": {
-        "format": "⏻",
+        "format": "\uf011",
         "on-click": "aquaos-sair",
         "tooltip": false
     }

@@ -1,4 +1,4 @@
-// Barra de menu estilo macOS (menu bar): botão ⌘ (Spotlight) à esquerda,
+// Barra de menu estilo macOS (menu bar): botão de menu à esquerda,
 // tray/volume/rede/bateria/hora à direita. Roda sobre o KWin — parte da
 // shell própria do AquaOS (sem plasmashell). Sem indicador de janela em
 // foco: o KWin não implementa o protocolo foreign-toplevel das barras.
@@ -11,7 +11,7 @@
     "modules-right": ["tray", "pulseaudio", "network", "battery", "clock"],
 
     "custom/menu": {
-        "format": "⌘",
+        "format": "\uf179",
         "on-click": "wofi --show drun --prompt Buscar --style /etc/aquaos/wofi.css",
         "tooltip": false
     },

@@ -17,13 +17,16 @@ window#waybar {
     font-weight: 600;
 }
 
-/* Botão ⌘ da barra de menu */
+/* Botão menu da barra de menu (glifo fa-apple do Nerd Font) */
 #custom-menu {
     padding: 0 12px;
-    font-size: 14px;
+    font-size: 16px;
+    font-family: "JetBrainsMono Nerd Font", "Inter";
 }
 
-/* Dock (base): ícones fixos de launcher */
+/* Dock (base): ícones monocrômicos do Nerd Font.
+   A fonte Nerd tem que vir PRIMEIRA, senão o glifo cai no fallback
+   da fonte de texto e vira quadrado. */
 #custom-terminal,
 #custom-finder,
 #custom-safari,
@@ -31,7 +34,8 @@ window#waybar {
 #custom-sair {
     padding: 6px 14px;
     margin: 3px;
-    font-size: 20px;
+    font-size: 22px;
+    font-family: "JetBrainsMono Nerd Font", "Inter";
     border-radius: 10px;
 }
 #custom-terminal:hover,

@@ -112,11 +112,23 @@ recomenda) — torne-a útil com `sudo passwd root` se quiser.
 | ⌘Enter | Terminal |
 | ⌘E | Finder |
 | ⌘Q | fechar janela |
-| ⌘↑ ou ⌃⌘F | tela cheia |
-| ⇧⌘F | ligar/desligar modo mosaico |
+| ⌘↑ | tela cheia |
 | ⇧⌘Q | encerrar sessão (volta ao login) |
-| ⌘1–4 / ⌘←→ | alternar espaços (Spaces) |
-| ⇧⌘3 / ⇧⌘4 | captura de tela: cheia / de área |
+| ⌘1–4 | alternar espaços (Spaces) |
+| ⇧⌘S | captura de tela (Spectacle) |
+
+## Deu erro no instalador?
+
+A janela de erro do Calamares **não deixa copiar o texto** — por isso o
+AquaOS captura tudo em log e mostra o final dele na tela:
+
+- Ao falhar, o instalador abre um terminal preto com o final do log
+  (para fotografar ou transcrever).
+- O log completo fica em `~/.cache/aquaos-installer.log`
+  (cópia fixa em `/tmp/aquaos-instalador.log`) — o log de sessão do
+  Calamares é anexado no fim do arquivo.
+- Para reportar: `Ctrl+Alt+F2` → login `nixos` (senha em branco) →
+  `tail -n 80 ~/.cache/aquaos-installer.log` → fotografar/colar.
 
 ## Personalização rápida
 

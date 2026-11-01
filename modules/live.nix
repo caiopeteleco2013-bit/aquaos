@@ -53,6 +53,38 @@ let
       QT_QPA_PLATFORM="$PLAT" DISPLAY="''${DISPLAY:-}" \
       WAYLAND_DISPLAY="''${WAYLAND_DISPLAY:-}" XDG_RUNTIME_DIR="''${XDG_RUNTIME_DIR:-}" \
       "${calamaresAquaos}/bin/calamares" >>"$LOG" 2>&1
+    RC=$?
+    # O dialog de erro do Calamares não deixa copiar o texto: anexamos o
+    # log de sessão dele (calamares grava em ~/.cache/calamares/ — e como
+    # roda via sudo, pode parar em /root/.cache/…) ao nosso log, e a
+    # cópia comum fica em /tmp/aquaos-instalador.log.
+    {
+      echo ""
+      echo "==== fim do instalador: codigo=$RC"
+      for SL in /root/.cache/calamares/session.log \
+                "''${HOME}/.cache/calamares/session.log"; do
+        if [ -f "$SL" ]; then
+          echo "---- log de sessao: $SL"
+          cat "$SL"
+        fi
+      done
+    } >>"$LOG"
+    cp -f "$LOG" /tmp/aquaos-instalador.log 2>/dev/null || true
+    if [ "$RC" -ne 0 ]; then
+      # Abre um terminal na sessão com o final do log: dá para fotografar
+      # ou ler e transcrever — nada de mensagem presa na janela de erro.
+      exec /run/current-system/sw/bin/kitty sh -c '
+        clear
+        echo "=========== Instalador AquaOS — erro ==========="
+        echo "Log completo: ~/.cache/aquaos-installer.log"
+        echo "(copia fixa em /tmp/aquaos-instalador.log)"
+        echo
+        tail -n 100 /tmp/aquaos-instalador.log
+        echo
+        echo "(pressione uma tecla para fechar)"
+        read -n 1
+      '
+    fi
   '';
 
   # Atalho de segurança: o instalador fica no menu (Wofi/Dock) para
