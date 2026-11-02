@@ -623,6 +623,15 @@ def run():
         catenate(variables, "username", gs.value("username"))
         catenate(variables, "fullname", fullname)
 
+    # --------------------- fechamento do arquivo ---------------------
+    # O attribute set aberto no cfghead PRECISA ser fechado aqui. No
+    # upstream, o configuration.nix era fechado pelo cfgtail (removido
+    # neste fork) — sem o fechamento, o nixos-install falha com
+    # "syntax error, unexpected end of file" no fim do arquivo.
+    # (bug confirmado pela ISO #12: EOF na linha exata onde o `}`
+    # deveria estar).
+    cfg += "}\n"
+
     # -------- copytree: plataforma AquaOS → disco alvo --------
     # Copia modules/base.nix e assets/ para /etc/nixos na máquina alvo —
     # exatamente a mesma árvore descrita pelo projeto flake.
