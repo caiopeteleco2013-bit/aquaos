@@ -2,7 +2,7 @@
 
 Um **sistema operacional real** (na verdade, uma distribuição Linux declarativa
 construída com Nix) com a experiência **totalmente inspirada no macOS**:
-tela de login estilo ReGreet, barra de menu translúcida, Dock, Spotlight,
+tela de login estilo terminal (tuigreet), barra de menu translúcida, Dock, Spotlight,
 janelas flutuantes com cantos arredondados e animação, papéis de parede
 gradiente estilo Sonoma — tudo por cima do **kernel Linux** que você pode
 trocar em uma linha.
@@ -12,7 +12,7 @@ trocar em uma linha.
 | kernel Linux (`linuxPackages_latest`) | o coração do sistema (troque por `zen`/`hardened` em uma linha) |
 | Nix + flakes | as ferramentas de build da distribuição inteira |
 | KWin (KDE, sem plasmashell) | compositor Wayland — janelas flutuam de graça, sombras + blur nativos (mais estável em VM) |
-| ReGreet (greetd + cage) | tela de login estilo macOS |
+| tuigreet (greetd) | tela de login — TUI no terminal, roda sem GPU (à prova de VM) |
 | Waybar (2 barras) | barra de menu (topo) **e** Dock (base) — a shell própria |
 | Wofi | Spotlight (⌘Espaço) |
 | WhiteSur + Bibata + Inter | temas/ícones/cursor/fonte estilo macOS (a SF Pro é proprietária da Apple) |
@@ -100,7 +100,8 @@ Dica: o KWin/KDE lida muito bem com uma VM sem aceleração 3D
    - roda `nixos-install` (com barra de progresso real do Nix).
 4. Reinicie: aparece a tela de login AquaOS → Desktop.
 
-Login do sistema instalado: a conta que você criou no passo 2. A senha de
+Login do sistema instalado: a conta que você criou no passo 2 (a tela de
+login é um terminal: digite o usuário, Enter, e a senha). A senha de
 root fica vazia (`nixos-install --no-root-passwd`, como o NixOS oficial
 recomenda) — torne-a útil com `sudo passwd root` se quiser.
 

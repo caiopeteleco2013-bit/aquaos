@@ -3,7 +3,7 @@
 # Este é o coração do sistema: o kernel atualizado, a sessão gráfica com
 # cara de macOS (compositor KWin do KDE — sem plasmashell — mais uma shell
 # própria: barra de menu Waybar, Dock, Spotlight Wofi), a tela de login
-# (ReGreet) e o tema visual mesmo.
+# (tuigreet) e o tema visual mesmo.
 #
 # Ele é usado em dois lugares com o MESMO conteúdo:
 #   * pela ISO live (importado por configuration.nix);
@@ -19,7 +19,6 @@ let
       mkdir -p $out/share/backgrounds
       python3 ${../assets/wallpaper.py} --out $out/share/backgrounds/sonoma.png
     '';
-  wallpaperPath = "${wallpaper}/share/backgrounds/sonoma.png";
 
   # Tema GTK estilo macOS. Fallback seguro entre versões do nixpkgs.
   # (A fonte SF Pro/ícones da Apple NÃO são redistribuíveis — daí o WhiteSur.)
@@ -98,7 +97,7 @@ let
     "${pkgs.procps}/bin/pkill" -P "$$" || true
   '';
 
-  # Sessão registrada — aparece na tela de login (ReGreet) do sistema
+  # Sessão registrada — aparece na tela de login (tuigreet) do sistema
   # instalado como "AquaOS".
   sessaoAquaOS = pkgs.writeTextDir "share/wayland-sessions/aquaos.desktop" ''
     [Desktop Entry]
@@ -207,7 +206,7 @@ in
 
   # ========================================================= SESSÃO
   # KWin entra pelo aquaos.desktop (share/wayland-sessions, listado na
-  # ReGreet) e executa o aquaos-desktop – nenhuma shell Plasma é ligada.
+  # tela de login) e executa o aquaos-desktop – nenhuma shell Plasma é ligada.
   # O agente polkit, a barra e o dock sobem dentro do próprio script.
 
   xdg.portal = {
@@ -221,18 +220,24 @@ in
   security.polkit.enable = true;
 
   # ==================================================
-  # TELA DE LOGIN (ReGreet dentro do cage — visual mac-ish)
+  # TELA DE LOGIN (tuigreet — TUI direto no VT, sem compositor)
   # ==================================================
+  # Antes o ReGreet rodava dentro do cage (compositor wlroots). Na GPU
+  # virtual do VMware (vmwgfx) o backend DRM do wlroots quebra
+  # ("plane 0: Invalid argument (os error 13)") e a tela de login inteira
+  # cai junto com o compositor. O tuigreet roda no terminal do VT, sem
+  # Wayland e sem GPU — não há o que crashar. A sessão oferecida após o
+  # login continua a mesma: "AquaOS", de share/wayland-sessions.
   services.greetd = {
     enable = true;
     settings.default_session = {
-      command = "${pkgs.cage}/bin/cage -s -- ${pkgs.regreet}/bin/regreet";
+      command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --asterisks --remember --remember-session --sessions /run/current-system/sw/share/wayland-sessions";
       user = "greeter";
     };
   };
   # O módulo services.greetd do nixpkgs já declara o usuário `greeter`
   # como isSystemUser (grupo "greeter"). Aqui só completamos o que o
-  # ReGreet precisa — NÃO declarar isNormalUser junto com o greetd:
+  # greeter precisa — NÃO declarar isNormalUser junto com o greetd:
   # os dois marcados violam a asserção "Exactly one of ..." do módulo users.
   users.users.greeter = {
     home = "/var/lib/greeter";
@@ -288,21 +293,6 @@ in
       gtk-cursor-theme-name = Bibata-Modern-Ice
       gtk-font-name = Inter 10
       gtk-decoration-layout = close,minimize,maximize:
-    '';
-
-    # ---- Tela de login (ReGreet) ----
-    "greetd/regreet.toml".text = ''
-      # Tela de login AquaOS
-      [background]
-      path = "${wallpaperPath}"
-      fit = "Cover"
-
-      [GTK]
-      application_prefer_dark_theme = false
-      cursor_theme = "Bibata-Modern-Ice"
-      font_name = "Inter 11"
-      icon_theme = "WhiteSur"
-      theme_name = "WhiteSur"
     '';
   };
 }
