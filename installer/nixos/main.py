@@ -15,9 +15,11 @@ com as mudanças do AquaOS:
     removidas (o base.nix já decide essas políticas).
 """
 
+import hashlib
 import json
 import libcalamares
 import os
+import secrets
 import shutil
 import subprocess
 import re
@@ -33,6 +35,112 @@ _ = gettext.translation(
 
 # Onde a ISO guarda a árvore compartilhada (modules/base.nix + assets/).
 BASE_DIR = "/etc/aquaos/base"
+
+
+# ==============================================================
+# Senha do usuário — SHA-512-crypt ($6$) puro em Python (só hashlib).
+# O Python 3.13+ removeu o módulo `crypt`, e a ISO da AquaOS não pode
+# depender de binários extras (mkpasswd etc.). O algoritmo abaixo é um
+# espelho fiel de crypt/sha512-crypt.c do glibc (Drepper), com estados
+# internos idênticos e a tabela de transposição byte→base64 igual à
+# _512_transpose_map. Validado byte a byte contra os vetores canônicos:
+#   * "Hello world!" / salt saltstring (lib/libcrypt do FreeBSD)
+#   * "Hello world!" / rounds=10000 (idem)
+#   * "password" / JvTuqzqw9bQ8iBl6 / rounds=40000 (docs do passlib)
+# ==============================================================
+
+_B64T = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
+
+def sha512_crypt(password, salt, rounds=5000):
+    key = password.encode("utf-8")
+    saltb = salt.encode("ascii")[:16]
+    key_len = len(key)
+    salt_len = len(saltb)
+
+    # digest B preliminar: key || salt || key
+    alt = hashlib.sha512()
+    alt.update(key)
+    alt.update(saltb)
+    alt.update(key)
+    sum_b = alt.digest()
+
+    # digest A: key || salt || (sum_b em key_len bytes) || (por bit da
+    # key_len: 64B de sum_b quando o bit é 1, a key inteira quando 0)
+    ctx = hashlib.sha512()
+    ctx.update(key)
+    ctx.update(saltb)
+    chunks = key_len
+    while chunks > 64:
+        ctx.update(sum_b)
+        chunks -= 64
+    ctx.update(sum_b[:chunks])
+    step = key_len
+    while step > 0:
+        if step & 1:
+            ctx.update(sum_b)
+        else:
+            ctx.update(key)
+        step >>= 1
+    sum_a = ctx.digest()
+
+    # seq P: digest de key repetida key_len vezes, repetido até key_len bytes
+    pctx = hashlib.sha512()
+    for _ in range(key_len):
+        pctx.update(key)
+    p_bytes = (pctx.digest() * (key_len // 64 + 1))[:key_len]
+
+    # seq S: digest da salt repetida (16 + sum_a[0]) vezes, repetido à salt_len
+    sctx = hashlib.sha512()
+    for _ in range(16 + sum_a[0]):
+        sctx.update(saltb)
+    s_bytes = (sctx.digest() * (salt_len // 64 + 1))[:salt_len]
+
+    # rodadas de queima (padrão glibc: 5000)
+    result = sum_a
+    for cnt in range(rounds):
+        h = hashlib.sha512()
+        h.update(p_bytes if cnt & 1 else result)
+        if cnt % 3 != 0:
+            h.update(s_bytes)
+        if cnt % 7 != 0:
+            h.update(p_bytes)
+        h.update(result if cnt & 1 else p_bytes)
+        result = h.digest()
+
+    # base64 do glibc (LSB-first), permutação byte→char do sha512-crypt
+    # (tripletes na ordem do _512_transpose_map; 21 grupos + 1 byte final)
+    parts = (
+        (42, 21, 0), (1, 43, 22), (23, 2, 44), (45, 24, 3), (4, 46, 25),
+        (26, 5, 47), (48, 27, 6), (7, 49, 28), (29, 8, 50), (51, 30, 9),
+        (10, 52, 31), (32, 11, 53), (54, 33, 12), (13, 55, 34), (35, 14, 56),
+        (57, 36, 15), (16, 58, 37), (38, 17, 59), (60, 39, 18), (19, 61, 40),
+        (41, 20, 62),
+    )
+    out = []
+    for a, b, c in parts:
+        w = (result[c] << 16) | (result[b] << 8) | result[a]
+        out.append(_B64T[w & 63])
+        out.append(_B64T[(w >> 6) & 63])
+        out.append(_B64T[(w >> 12) & 63])
+        out.append(_B64T[(w >> 18) & 63])
+    tail = result[63]
+    out.append(_B64T[tail & 63])
+    out.append(_B64T[(tail >> 6) & 63])
+
+    prefix = "$6$"
+    if rounds != 5000:
+        prefix += "rounds={}$".format(rounds)
+    return prefix + salt[:16] + "$" + "".join(out)
+
+
+# O Calamares guarda a senha ofuscada no globalstorage:
+# Calamares::String::obscure (involução em QChar: chr(0x1001F - ord(c))
+# quando ord(c) > 0x21). Aqui desfazemos o ofusco.
+def unobscure(password):
+    return "".join(
+        c if ord(c) <= 0x21 else chr(0x1001F - ord(c)) for c in password
+    )
 
 
 # As strings abaixo formam o configuration.nix da máquina alvo.
@@ -143,12 +251,20 @@ cfgconsole = """\
 
 """
 
+# A conta NÃO fecha aqui: o fechamento (cfgusersclose) entra no run()
+# APÓS o initialHashedPassword, quando o Calamares tem a senha da página.
 cfgusers = """\
-  # Conta de usuário criada pelo instalador.
+  # Conta de usuário criada pelo instalador. A senha digitada na tela do
+  # Calamares vem do globalstorage (chave "password", ofuscada pelo
+  # próprio Calamares), é revelada e gravada como initialHashedPassword:
+  # a senha do login passa a ser exatamente a mesma da instalação.
   users.users."@@username@@" = {
     isNormalUser = true;
     description = "@@fullname@@";
     extraGroups = [ "wheel" "networkmanager" ];
+
+"""
+cfgusersclose = """\
   };
 
 """
@@ -617,11 +733,37 @@ def run():
     # -------------------------- usuário --------------------------
     if gs.value("username") is not None:
         # O "nome exibido" é opcional no Calamares; cai para o username.
-        fullname = gs.value("fullname") or gs.value("username")
+        # Escapado antes de entrar numa string Nix (aspas/backslash).
+        _fullname = gs.value("fullname") or gs.value("username")
+        fullname = _fullname.replace("\\", "\\\\").replace('"', '\\"')
 
         cfg += cfgusers
         catenate(variables, "username", gs.value("username"))
         catenate(variables, "fullname", fullname)
+
+        # A senha digitada na página de usuário chega em
+        # globalstorage["password"] ofuscada pelo próprio Calamares
+        # (Calamares::String::obscure). Desfazemos o ofusco e gravamos o
+        # digest SHA-512-crypt ($6$) direto no configuration.nix como
+        # initialHashedPassword — antes disso a conta nascia SEM senha
+        # declarada e dependia dos jobs do módulo vanilla users, que não
+        # davam conta de setá-la no disco NixOS: o login recusava a senha.
+        pw_obscured = gs.value("password")
+        if pw_obscured:
+            pw_salt = "".join(
+                secrets.choice(
+                    "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                    "abcdefghijklmnopqrstuvwxyz"
+                )
+                for _ in range(16)
+            )
+            pw_digest = sha512_crypt(unobscure(pw_obscured), pw_salt)
+            cfg += '    initialHashedPassword = "{}";\n'.format(pw_digest)
+            libcalamares.utils.debug(
+                "Senha do usuário gravada como initialHashedPassword "
+                "(SHA-512-crypt, salt de 16 caracteres)"
+            )
+        cfg += cfgusersclose
 
     # --------------------- fechamento do arquivo ---------------------
     # O attribute set aberto no cfghead PRECISA ser fechado aqui. No
